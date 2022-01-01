@@ -927,6 +927,8 @@ namespace ts {
                 case SyntaxKind.ExclamationEqualsToken:
                 case SyntaxKind.EqualsEqualsEqualsToken:
                 case SyntaxKind.ExclamationEqualsEqualsToken:
+                case SyntaxKind.GreaterThanToken:
+                case SyntaxKind.LessThanToken:
                     return isNarrowableOperand(expr.left) || isNarrowableOperand(expr.right) ||
                         isNarrowingTypeofOperands(expr.right, expr.left) || isNarrowingTypeofOperands(expr.left, expr.right);
                 case SyntaxKind.InstanceOfKeyword:

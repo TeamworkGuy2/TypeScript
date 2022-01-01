@@ -23608,6 +23608,15 @@ namespace ts {
                     case SyntaxKind.AmpersandAmpersandEqualsToken:
                     case SyntaxKind.QuestionQuestionEqualsToken:
                         return narrowTypeByTruthiness(narrowType(type, expr.right, assumeTrue), expr.left, assumeTrue);
+                    case SyntaxKind.GreaterThanToken:
+                    case SyntaxKind.LessThanToken:
+                        if (isNumericLiteral(expr.right) && isMatchingReference(reference, expr.left)) {
+                            return getTypeWithFacts(type, TypeFacts.NEUndefinedOrNull);
+                        }
+                        if (isNumericLiteral(expr.left) && isMatchingReference(reference, expr.right)) {
+                            return getTypeWithFacts(type, TypeFacts.NEUndefinedOrNull);
+                        }
+                        break;
                     case SyntaxKind.EqualsEqualsToken:
                     case SyntaxKind.ExclamationEqualsToken:
                     case SyntaxKind.EqualsEqualsEqualsToken:
@@ -27428,6 +27437,20 @@ namespace ts {
 
         function checkNonNullType(type: Type, node: Node) {
             return checkNonNullTypeWithReporter(type, node, reportObjectPossiblyNullOrUndefinedError);
+        }
+
+        function checkNonNullForRelativeComparisonType(type: Type, node: Node) {
+            if (strictNullChecks && type.flags & TypeFlags.Unknown) {
+                error(node, Diagnostics.Object_is_of_type_unknown);
+                return errorType;
+            }
+            const kind = type.flags & TypeFlags.Nullable;
+            if (kind) {
+                reportObjectPossiblyNullOrUndefinedError(node, kind);
+                const t = getNonNullableType(type);
+                return t.flags & (TypeFlags.Nullable | TypeFlags.Never) ? errorType : t;
+            }
+            return type;
         }
 
         function checkNonNullNonVoidType(type: Type, node: Node): Type {
@@ -32323,8 +32346,8 @@ namespace ts {
                 case SyntaxKind.LessThanEqualsToken:
                 case SyntaxKind.GreaterThanEqualsToken:
                     if (checkForDisallowedESSymbolOperand(operator)) {
-                        leftType = getBaseTypeOfLiteralType(checkNonNullType(leftType, left));
-                        rightType = getBaseTypeOfLiteralType(checkNonNullType(rightType, right));
+                        leftType = getBaseTypeOfLiteralType(checkNonNullForRelativeComparisonType(leftType, left));
+                        rightType = getBaseTypeOfLiteralType(checkNonNullForRelativeComparisonType(rightType, right));
                         reportOperatorErrorUnless((left, right) =>
                             isTypeComparableTo(left, right) || isTypeComparableTo(right, left) || (
                                 isTypeAssignableTo(left, numberOrBigIntType) && isTypeAssignableTo(right, numberOrBigIntType)));
